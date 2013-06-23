@@ -12,7 +12,7 @@
 #include "psp_headers.h"
 #include "amctrl.h"
 #include "utils.h"
-
+#include "tmp.h"
 /*************************************************************/
 #if 0
 typedef struct {
@@ -149,46 +149,66 @@ int pgd_decrypt(u8 *pgd_buf, int pgd_size, int pgd_flag, u8 *pgd_vkey);
 
 int process_pgd(char *pgd_file)
 {
-	u8 *data_buf, *pgd_buf;
-	char fname[256];
-	int retv, data_size, pgd_size, pgd_flag;
+    u8 *data_buf, *pgd_buf, *new_buf, *new_buf2, *data_buf2;
+    PGD_DESC *pgd;
+    char fname[256];
+    int retv, data_size, data_size2, pgd_size, pgd_flag;
 
-	data_buf = load_file(pgd_file, &data_size);
-	if(data_buf==NULL){
-		printf("Open input file <%s> error!\n", pgd_file);
-		return -1;
-	}
-	if(data_size<0x90){
-		free(data_buf);
-		return -1;
-	}
+    data_buf = load_file(pgd_file, &data_size);
+    if(data_buf==NULL){
+        printf("Open input file <%s> error!\n", pgd_file);
+        return -1;
+    }
 
-	if(*(u32*)(data_buf+0)==0x44475000){
-		pgd_buf = data_buf;
-		pgd_size = data_size;
-	}else if(*(u32*)(data_buf+0x90)==0x44475000){
-		pgd_buf = data_buf+0x90;
-		pgd_size = data_size-0x90;
-	}else{
-		free(data_buf);
-		return -1;
-	}
-	printf("\nProcess %s ...\n", pgd_file);
+    if(*(u32*)(data_buf+0)==0x44475000){
+        pgd_buf = data_buf;
+        pgd_size = data_size;
+    }else if(*(u32*)(data_buf+0x90)==0x44475000){
+        pgd_buf = data_buf+0x90;
+        pgd_size = data_size-0x90;
+    }else{
+        free(data_buf);
+        return -1;
+    }
+    printf("\nProcess %s ...\n", pgd_file);
 
-	// 0x40xxxxxx : 2
-	// 0x44xxxxxx : 1
-	// default as 2
-	pgd_flag = 2;
+    // 0x40xxxxxx : 2
+    // 0x44xxxxxx : 1
+    // default as 2
+    pgd_flag = 2;
 
-	retv = pgd_decrypt(pgd_buf, pgd_size, pgd_flag, NULL);
-	if(retv>0){
-		sprintf(fname, "%s.decrypt", pgd_file);
-		write_file(fname, pgd_buf+0x90, retv);
-		printf("Save %s ...\n", fname);
-	}
+    pgd = pgd_open(pgd_buf, pgd_flag, NULL);
 
-	free(data_buf);
-	return 0;
+    
+    sprintf(fname, "%s.decrypt", pgd_file);
+    data_buf2 = load_file(fname, &data_size2);
+    
+    new_buf = malloc(0x90);    
+    memcpy(new_buf, data_buf, 0x90);
+    free(data_buf);
+    
+    new_buf2 = malloc(0x90 + data_size2);
+    
+    if (new_buf2 == 0)
+    {
+        free(data_buf2);
+        return -1;
+        
+    }
+        
+    
+    memcpy(new_buf2, new_buf, 0x90);
+    memcpy(new_buf2, data_buf2, data_size2);
+    
+    retv =  pgd_encrypt(new_buf2, 2, NULL);
+
+    if(retv>0){
+        sprintf(fname, "%s.encrypt", pgd_file);
+        write_file(fname, new_buf2, retv);
+        printf("Save %s ...\n", fname);
+    }
+    free(new_buf);
+     return 0;
 }
 
 

@@ -14,24 +14,7 @@
 
 /*************************************************************/
 
-typedef struct {
-	u8  vkey[16];
-
-	int open_flag;
-	int key_index;
-	int drm_type;
-	int mac_type;
-	int cipher_type;
-
-	int data_size;
-	int align_size;
-	int block_size;
-	int block_nr;
-	int data_offset;
-	int table_offset;
-
-	u8 *buf;
-}PGD_DESC;
+#include "tmp.h"
 
 /*
 typedef struct {
@@ -53,6 +36,7 @@ u8 dnas_key1A90[] = {0xED,0xE2,0x5D,0x2D,0xBB,0xF8,0x12,0xE5,0x3C,0x5C,0x59,0x32
 u8 dnas_key1AA0[] = {0x27,0x74,0xFB,0xEB,0xA4,0xA0,   1,0xD7,   2,0x56,0x9E,0x33,0x8C,0x19,0x57,0x83};
 
 extern int verbose;
+
 
 PGD_DESC *pgd_open(u8 *pgd_buf, int pgd_flag, u8 *pgd_vkey)
 {
